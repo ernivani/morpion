@@ -43,6 +43,27 @@ int check_winner() {
     return 0;
 }
 
+void handle_click(int x, int y) {
+    if (game_state != RUNNING) return;
+
+    int row = y / (600 / GRID_SIZE);
+    int col = x / (600 / GRID_SIZE);
+
+    if (board[row][col] == EMPTY && current_player == PLAYER_X) {
+        board[row][col] = PLAYER_X;
+        current_player = PLAYER_O;
+
+        int winner = check_winner();
+        if (winner == PLAYER_X) {
+            game_state = X_WINS;
+        } else if (winner == PLAYER_O) {
+            game_state = O_WINS;
+        } else if (winner == DRAW) {
+            game_state = DRAW;
+        }
+    }
+}
+
 int minimax(int depth, int isMaximizing) {
     int winner = check_winner();
     
