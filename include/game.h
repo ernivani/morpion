@@ -2,6 +2,7 @@
 #define GAME_H
 
 #define GRID_SIZE 3
+#include "neural_network.h" 
 
 typedef enum { EMPTY, PLAYER_X, PLAYER_O } Cell;
 typedef enum { RUNNING, X_WINS, O_WINS, DRAW } GameState;
@@ -14,5 +15,7 @@ void init_board();
 int check_winner();
 void handle_click(int x, int y);
 void computer_play();
+void ai_play(NeuralNetwork *nn, Cell player);
+void init_ai();
 
 #endif

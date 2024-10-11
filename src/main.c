@@ -29,27 +29,16 @@ int main() {
     }
 
     init_board();
+    init_ai();
 
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 quit = 1;
-            } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-                handle_click(event.button.x, event.button.y);
-            }
-
-            if (game_state != RUNNING) {
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_SPACE) {
-                        init_board();
-                        game_state = RUNNING;
-                        current_player = PLAYER_X;
-                    }
-                }
             }
         }
 
-        if (current_player == PLAYER_O && game_state == RUNNING) {
+        if (game_state == RUNNING) {
             computer_play();
         }
 
@@ -62,6 +51,12 @@ int main() {
 
 
         SDL_RenderPresent(renderer);
+        
+        if (game_state != RUNNING) {
+            init_board();
+            game_state = RUNNING;
+            current_player = PLAYER_X;
+        }
     }
 
     SDL_DestroyRenderer(renderer);

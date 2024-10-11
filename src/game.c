@@ -1,5 +1,11 @@
 #include "game.h"
 #include <limits.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+
+NeuralNetwork ai_x;
+NeuralNetwork ai_o;
 
 Cell board[GRID_SIZE][GRID_SIZE];
 GameState game_state = RUNNING;
@@ -9,6 +15,32 @@ void init_board() {
     for (int i = 0; i < GRID_SIZE; i++) {
         for (int j = 0; j < GRID_SIZE; j++) {
             board[i][j] = EMPTY;
+        }
+    }
+}
+
+void init_ai() {
+    init_network(&ai_x);
+    init_network(&ai_o);
+}
+
+void handle_click(int x, int y) {
+    if (game_state != RUNNING) return;
+
+    int row = y / (600 / GRID_SIZE);
+    int col = x / (600 / GRID_SIZE);
+
+    if (board[row][col] == EMPTY && current_player == PLAYER_X) {
+        board[row][col] = PLAYER_X;
+        current_player = PLAYER_O;
+
+        int winner = check_winner();
+        if (winner == PLAYER_X) {
+            game_state = X_WINS;
+        } else if (winner == PLAYER_O) {
+            game_state = O_WINS;
+        } else if (winner == DRAW) {
+            game_state = DRAW;
         }
     }
 }
@@ -43,97 +75,58 @@ int check_winner() {
     return 0;
 }
 
-void handle_click(int x, int y) {
-    if (game_state != RUNNING) return;
+void ai_play(NeuralNetwork *nn, Cell player) {
+    double input[INPUT_NODES];
+    double output[OUTPUT_NODES];
 
-    int row = y / (600 / GRID_SIZE);
-    int col = x / (600 / GRID_SIZE);
+    for (int i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        int row = i / GRID_SIZE;
+        int col = i % GRID_SIZE;
+        if (board[row][col] == EMPTY)
+            input[i] = 0;
+        else if (board[row][col] == player)
+            input[i] = 1;
+        else
+            input[i] = -1;
+    }
 
-    if (board[row][col] == EMPTY && current_player == PLAYER_X) {
-        board[row][col] = PLAYER_X;
-        current_player = PLAYER_O;
+    feedforward(nn, input, output);
 
-        int winner = check_winner();
-        if (winner == PLAYER_X) {
-            game_state = X_WINS;
-        } else if (winner == PLAYER_O) {
-            game_state = O_WINS;
-        } else if (winner == DRAW) {
-            game_state = DRAW;
+    int move = -1;
+    double bestValue = -INFINITY;
+    for (int i = 0; i < OUTPUT_NODES; i++) {
+        int row = i / GRID_SIZE;
+        int col = i % GRID_SIZE;
+        if (board[row][col] == EMPTY && output[i] > bestValue) {
+            bestValue = output[i];
+            move = i;
         }
     }
-}
 
-int minimax(int depth, int isMaximizing) {
-    int winner = check_winner();
-    
-    if (winner == PLAYER_O) return 10 - depth;
-    if (winner == PLAYER_X) return depth - 10;
-    if (winner == DRAW) return 0;
-
-    if (isMaximizing) {
-        int bestScore = INT_MIN;
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
-                if (board[i][j] == EMPTY) {
-                    board[i][j] = PLAYER_O;
-                    int score = minimax(depth + 1, 0);
-                    board[i][j] = EMPTY;
-                    bestScore = score > bestScore ? score : bestScore;
-                }
-            }
-        }
-        return bestScore;
-    } else {
-        int bestScore = INT_MAX;
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
-                if (board[i][j] == EMPTY) {
-                    board[i][j] = PLAYER_X;
-                    int score = minimax(depth + 1, 1);
-                    board[i][j] = EMPTY;
-                    bestScore = score < bestScore ? score : bestScore;
-                }
-            }
-        }
-        return bestScore;
+    if (move != -1) {
+        int row = move / GRID_SIZE;
+        int col = move % GRID_SIZE;
+        board[row][col] = player;
     }
 }
 
 void computer_play() {
-    if (game_state != RUNNING || current_player != PLAYER_O) return;
+    if (game_state != RUNNING) return;
 
-    int bestScore = INT_MIN;
-    int moveRow = -1;
-    int moveCol = -1;
-
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            if (board[i][j] == EMPTY) {
-                board[i][j] = PLAYER_O;
-                int score = minimax(0, 0);
-                board[i][j] = EMPTY;
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    moveRow = i;
-                    moveCol = j;
-                }
-            }
-        }
+    if (current_player == PLAYER_X) {
+        ai_play(&ai_x, PLAYER_X);
+        current_player = PLAYER_O;
+    } else if (current_player == PLAYER_O) {
+        ai_play(&ai_o, PLAYER_O);
+        current_player = PLAYER_X;
     }
 
-    if (moveRow != -1 && moveCol != -1) {
-        board[moveRow][moveCol] = PLAYER_O;
-        current_player = PLAYER_X;
-
-        int winner = check_winner();
-        if (winner == PLAYER_X) {
-            game_state = X_WINS;
-        } else if (winner == PLAYER_O) {
-            game_state = O_WINS;
-        } else if (winner == DRAW) {
-            game_state = DRAW;
-        }
+    int winner = check_winner();
+    if (winner == PLAYER_X) {
+        game_state = X_WINS;
+    } else if (winner == PLAYER_O) {
+        game_state = O_WINS;
+    } else if (winner == DRAW) {
+        game_state = DRAW;
     }
 }
