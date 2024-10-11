@@ -2,7 +2,7 @@
 #include "game.h"
 #include "render.h"
 
-int main(int argc, char *argv[]) {
+int main() {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
     SDL_Event event;
@@ -37,6 +37,16 @@ int main(int argc, char *argv[]) {
             } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 handle_click(event.button.x, event.button.y);
             }
+
+            if (game_state != RUNNING) {
+                if (event.type == SDL_KEYDOWN) {
+                    if (event.key.keysym.sym == SDLK_SPACE) {
+                        init_board();
+                        game_state = RUNNING;
+                        current_player = PLAYER_X;
+                    }
+                }
+            }
         }
 
         if (current_player == PLAYER_O && game_state == RUNNING) {
@@ -48,6 +58,8 @@ int main(int argc, char *argv[]) {
 
         draw_board(renderer);
         display_winner(renderer);
+
+
 
         SDL_RenderPresent(renderer);
     }

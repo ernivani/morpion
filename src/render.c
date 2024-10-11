@@ -35,4 +35,8 @@ void display_winner(SDL_Renderer *renderer) {
     } else if (game_state == DRAW) {
         printf("Match nul !\n");
     }
+
+    if (game_state == X_WINS || game_state == O_WINS || game_state == DRAW) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    }
 }
