@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define EPSILON 0.2
 NeuralNetwork ai_x;
 NeuralNetwork ai_o;
 
@@ -75,6 +76,7 @@ int check_winner() {
     return 0;
 }
 
+
 void ai_play(NeuralNetwork *nn, Cell player) {
     double input[INPUT_NODES];
     double output[OUTPUT_NODES];
@@ -93,13 +95,32 @@ void ai_play(NeuralNetwork *nn, Cell player) {
     feedforward(nn, input, output);
 
     int move = -1;
-    double bestValue = -INFINITY;
-    for (int i = 0; i < OUTPUT_NODES; i++) {
-        int row = i / GRID_SIZE;
-        int col = i % GRID_SIZE;
-        if (board[row][col] == EMPTY && output[i] > bestValue) {
-            bestValue = output[i];
-            move = i;
+
+    double r = ((double)rand() / RAND_MAX);
+
+    if (r < EPSILON) {
+        int valid_moves[GRID_SIZE * GRID_SIZE];
+        int num_valid_moves = 0;
+        for (int i = 0; i < OUTPUT_NODES; i++) {
+            int row = i / GRID_SIZE;
+            int col = i % GRID_SIZE;
+            if (board[row][col] == EMPTY) {
+                valid_moves[num_valid_moves++] = i;
+            }
+        }
+        if (num_valid_moves > 0) {
+            int random_index = rand() % num_valid_moves;
+            move = valid_moves[random_index];
+        }
+    } else {
+        double bestValue = -INFINITY;
+        for (int i = 0; i < OUTPUT_NODES; i++) {
+            int row = i / GRID_SIZE;
+            int col = i % GRID_SIZE;
+            if (board[row][col] == EMPTY && output[i] > bestValue) {
+                bestValue = output[i];
+                move = i;
+            }
         }
     }
 
@@ -109,7 +130,6 @@ void ai_play(NeuralNetwork *nn, Cell player) {
         board[row][col] = player;
     }
 }
-
 void computer_play() {
     if (game_state != RUNNING) return;
 
